@@ -1,0 +1,57 @@
+# === ENV Files ===
+.env
+.env.local
+.env.*
+
+# === SQLite Databases ===
+*.db
+*.sqlite
+*.sqlite3
+database/*.db
+migrations/*.lock
+
+# === Logs ===
+logs/
+*.log
+*.out
+
+# === Temp Files ===
+tmp/
+*.tmp
+*.swp
+*.bak
+
+# === Cache & Build ===
+*.cache
+*.log
+*.pid
+*.seed
+*.lock
+coverage/
+dist/
+build/
+node_modules/
+vendor/
+
+# === Docker ===
+*.pid
+docker-compose.override.yml
+*.tar
+*.img
+
+# === IDE & OS ===
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# === Go specific ===
+bin/
+*.exe
+*.test
+*.mod
+*.sum
+*.prof
+*.coverprofile
+
+readme.txt

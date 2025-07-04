@@ -1,0 +1,5 @@
+💻 STDGI: Nuevo mensaje para {full_name}
+🕒 Fecha de inicio: {start_date}
+💳 Método de pago: {payment}
+📎 Enlace del proyecto: {project_link}
+📩 Te contactaremos en: {contact}

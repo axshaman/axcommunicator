@@ -1,0 +1,61 @@
+services:
+  axcommutator:
+    build:
+      context: .
+      target: dev
+    image: axcommutator:dev
+    container_name: axcommutator
+    restart: unless-stopped
+    ports:
+      - "8600:8600"
+    volumes:
+      - ./database:/app/database
+      - ./storage:/app/storage
+      - ./logs:/app/logs
+      - ./tmp:/app/tmp
+      - go-cache:/go/pkg/mod
+      - go-build-cache:/.cache
+    environment:
+      - GO_ENV=development
+      - GOCACHE=/app/tmp/.cache
+      - GOMODCACHE=/tmp/gomodcache
+    env_file:
+      - .env
+    networks:
+      - axcommutator_net
+    depends_on:
+      - db_init
+
+  db_init:
+    image: alpine:3.18
+    container_name: axcommutator_db_init
+    volumes:
+      - ./database:/app/database
+    command: >
+      sh -c "mkdir -p /app/database && 
+             touch /app/database/comms.db && 
+             chmod 666 /app/database/comms.db"
+    networks:
+      - axcommutator_net
+
+  cleaner:
+    image: alpine:3.18
+    container_name: axcommutator_cleaner
+    restart: unless-stopped
+    volumes:
+      - ./storage/temp:/app/storage/temp
+    command: >
+      sh -c "while true; do
+        find /app/storage/temp -type f -mtime +1 -delete;
+        sleep 86400;
+      done"
+    networks:
+      - axcommutator_net
+
+volumes:
+  go-cache:
+  go-build-cache:
+
+networks:
+  axcommutator_net:
+    driver: bridge

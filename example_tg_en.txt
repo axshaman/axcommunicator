@@ -1,0 +1,5 @@
+💻 CODCL: New message for {full_name}
+🕒 Start date: {start_date}
+💳 Payment method: {payment}
+📎 Project link: {project_link}
+📩 We’ll be in touch at {contact}

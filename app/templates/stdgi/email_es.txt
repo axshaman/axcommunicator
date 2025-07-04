@@ -1,0 +1,13 @@
+Hola {{ .full\_name }},
+
+Bienvenido a {{ .service\_name }} – apoyo en estrategia digital y transformación.
+
+🕒 Fecha de inicio: {{ .start\_date }}
+💳 Método de pago: {{ .payment }}
+📩 Información de contacto: {{ .contact }}
+📎 Enlace del proyecto: {{ .project\_link }}
+
+Sus documentos (especificación, factura, contrato) están adjuntos a este correo electrónico.
+
+Atentamente,
+El equipo de {{ .service\_name }}

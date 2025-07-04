@@ -1,0 +1,13 @@
+Bonjour {{ .full\_name }},
+
+Bienvenue chez {{ .service\_name }} – accompagnement en stratégie digitale et transformation.
+
+🕒 Date de début : {{ .start\_date }}
+💳 Mode de paiement : {{ .payment }}
+📩 Coordonnées : {{ .contact }}
+📎 Lien vers le projet : {{ .project\_link }}
+
+Vos documents (cahier des charges, facture, contrat) sont joints à cet e-mail.
+
+Cordialement,
+L’équipe {{ .service\_name }}

@@ -1,0 +1,20 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o ./tmp/axcommutator ."
+  bin = "./tmp/axcommutator"
+  delay = 1000
+  exclude_dir = ["vendor", "logs", "database", "storage", "tmp", "migrations"]
+  include_ext = ["go", "tpl", "tmpl", "html", "env"]
+  full_bin = "./tmp/axcommutator"
+
+[log]
+  time = true
+  color = true
+
+[color]
+  main = "magenta"
+  watcher = "cyan"
+  build = "yellow"
+  runner = "green"

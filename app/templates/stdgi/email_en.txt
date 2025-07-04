@@ -1,0 +1,13 @@
+Hello {full_name},
+
+Welcome to {service_name} – digital strategy and transformation support.
+
+🕒 Start Date: {start_date}
+💳 Payment Method: {payment}
+📩 Contact Info: {contact}
+📎 Project Link: {project_link}
+
+Your documents (spec, invoice, contract) are attached to this email.
+
+Best regards,  
+The {service_name} Team
