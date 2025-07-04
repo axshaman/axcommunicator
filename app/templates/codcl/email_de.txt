@@ -1,0 +1,13 @@
+Hallo {full_name},
+
+Willkommen bei {service_name} – dem ersten Vibecoding Studio von Aleksandr Shaman.
+
+🕒 Startdatum: {start_date}
+💳 Zahlungsmethode: {payment}
+📩 Kontaktinfo: {contact}
+📎 Projektlink: {project_link}
+
+Ihre Dokumente (Spezifikation, Rechnung, Vertrag) befinden sich im Anhang dieser E-Mail.
+
+Mit freundlichen Grüßen,
+Das {service_name} Team

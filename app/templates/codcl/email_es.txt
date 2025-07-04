@@ -1,3 +1,13 @@
-Hola {{ .full_name }},
+Hola {full_name},
 
-Este CODCL.
+Bienvenido a {service_name}, el primer estudio Vibecoding creado por Aleksandr Shaman.
+
+🕒 Fecha de inicio: {start_date}
+💳 Método de pago: {payment}
+📩 Información de contacto: {contact}
+📎 Enlace del proyecto: {project_link}
+
+Tus documentos (especificaciones, factura, contrato) están adjuntos a este correo electrónico.
+
+Saludos cordiales,
+El equipo de {service_name}

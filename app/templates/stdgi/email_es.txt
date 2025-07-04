@@ -1,13 +1,13 @@
-Hola {{ .full\_name }},
+Hola {full_name},
 
-Bienvenido a {{ .service\_name }} – apoyo en estrategia digital y transformación.
+Bienvenido a {service_name}, apoyo en estrategia digital y transformación.
 
-🕒 Fecha de inicio: {{ .start\_date }}
-💳 Método de pago: {{ .payment }}
-📩 Información de contacto: {{ .contact }}
-📎 Enlace del proyecto: {{ .project\_link }}
+🕒 Fecha de inicio: {start_date}
+💳 Método de pago: {payment}
+📩 Información de contacto: {contact}
+📎 Enlace del proyecto: {project_link}
 
-Sus documentos (especificación, factura, contrato) están adjuntos a este correo electrónico.
+Tus documentos (especificaciones, factura, contrato) están adjuntos a este correo electrónico.
 
-Atentamente,
-El equipo de {{ .service\_name }}
+Saludos cordiales,
+El equipo de {service_name}

@@ -1,0 +1,5 @@
+💻 CODCL: Neue Nachricht für {full_name}
+🕒 Startdatum: {start_date}
+💳 Zahlungsmethode: {payment}
+📎 Projektlink: {project_link}
+📩 Wir melden uns unter {contact}

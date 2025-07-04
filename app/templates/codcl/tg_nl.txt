@@ -1,0 +1,5 @@
+💻 CODCL: Nieuw bericht voor {full_name}
+🕒 Startdatum: {start_date}
+💳 Betaalmethode: {payment}
+📎 Projectlink: {project_link}
+📩 We nemen contact met je op via {contact}

@@ -1,5 +1,5 @@
-💻 CODCL: Новое сообщение для {full_name}
+💻 STDGI: Новое сообщение для {full_name}
 🕒 Дата начала: {start_date}
 💳 Способ оплаты: {payment}
 📎 Ссылка на проект: {project_link}
-📩 Мы свяжемся с вами: {contact}
+📩 Мы свяжемся с вами по адресу {contact}
