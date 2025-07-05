@@ -20,7 +20,7 @@ type ProjectOrder struct {
 	ProjectLink     string `json:"projectLink,omitempty"`
 	PaymentMethod   string `json:"paymentMethod"`
 	StartDate       string `json:"startDate"`
-	Languages       int    `json:"languages"`
+	Language 		string `json:"language"`
 	BriefFile        []byte `json:"briefFile,omitempty"`
 	SpecificationPdf []byte `json:"specificationPdf"`
 	InvoicePdf       []byte `json:"invoicePdf"`
@@ -38,15 +38,11 @@ type CookieConsent struct {
 }
 
 func HandleProjectOrder(w http.ResponseWriter, r *http.Request) {
-	// fmt.Println("🚀 HandleProjectOrder started")
-
 	var order ProjectOrder
 	if err := json.NewDecoder(r.Body).Decode(&order); err != nil {
-		// fmt.Printf("❌ JSON decode error: %v\n", err)
 		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
-	// fmt.Printf("📦 Received order: %+v\n", order)
 
 	if order.FullName == "" || order.ContactInfo == "" || order.PaymentMethod == "" {
 		respondWithError(w, http.StatusBadRequest, "Missing required fields")
@@ -64,10 +60,14 @@ func HandleProjectOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lang := r.Header.Get("Accept-Language")
+	// определение языка: заголовок > тело > fallback
+	lang := order.Language
+	if lang == "" {
+		lang = r.Header.Get("Accept-Language")
+	}
 	if lang == "" {
 		lang = "en"
-	}
+	}	
 
 	service, ok := config.GetService(serviceName)
 	if !ok {
@@ -82,16 +82,13 @@ func HandleProjectOrder(w http.ResponseWriter, r *http.Request) {
 			lang = "en"
 		}
 	}
-	// fmt.Printf("🌍 Service: %s | Lang: %s\n", service.Name, lang)
 
 	filePaths, err := saveOrderFiles(order)
 	if err != nil {
-		// fmt.Printf("❌ File save error: %v\n", err)
 		respondWithError(w, http.StatusInternalServerError, "Failed to save files")
 		return
 	}
 	defer cleanupFiles(filePaths)
-	// fmt.Printf("📁 Files: %+v\n", filePaths)
 
 	templateData := map[string]interface{}{
 		"full_name":    order.FullName,
@@ -100,64 +97,34 @@ func HandleProjectOrder(w http.ResponseWriter, r *http.Request) {
 		"project_link": order.ProjectLink,
 		"payment":      order.PaymentMethod,
 		"start_date":   order.StartDate,
-		"languages":    order.Languages,
+		"language":     lang,
 		"service_name": service.Name,
 	}
 
 	subject := "Order Confirmation"
 	body := "Order received VibeCoders Club by Aleksandr Shaman - www.codcl.com"
 
-	// Fill subject from file
+	// шаблон темы письма
 	if path := service.EmailTemplateSubjectPaths[lang]; path != "" {
 		if raw, err := os.ReadFile(path); err == nil {
 			subject = utils.FillTemplate(string(raw), templateData)
-			if err != nil {
-				// fmt.Printf("❌ Subject render error: %v\n", err)
-			} else {
-				// fmt.Printf("📧 Final subject:\n%s\n", subject)
-			}
-		} else {
-			// fmt.Printf("❌ Failed to read subject file: %v\n", err)
 		}
 	}
 
-	// Fill body from file
+	// шаблон тела письма
 	if path := service.EmailTemplateBodyPaths[lang]; path != "" {
 		if raw, err := os.ReadFile(path); err == nil {
 			body = utils.FillTemplate(string(raw), templateData)
-			if err != nil {
-				// fmt.Printf("❌ Body render error: %v\n", err)
-			} else {
-				// fmt.Printf("📧 Final body:\n%s\n", body)
-			}
-		} else {
-			// fmt.Printf("❌ Failed to read body file: %v\n", err)
 		}
 	}
-	
 
 	attachments, err := utils.PrepareAttachments(filePaths)
-	if err != nil {
-		// fmt.Printf("❌ Attachments error: %v\n", err)
-	} else {
-		if err := utils.SendOrderEmail(service, subject, body, order.ContactInfo, attachments); err != nil {
-			// fmt.Printf("❌ Email send error: %v\n", err)
-		} else {
-			// fmt.Println("✅ Email sent")
-		}
+	if err == nil {
+		_ = utils.SendOrderEmail(service, subject, body, order.ContactInfo, attachments)
 	}
 
-	if err := utils.SendTelegramNotification(service, lang, templateData); err != nil {
-		// fmt.Printf("❌ Telegram error: %v\n", err)
-	} else {
-		// fmt.Println("✅ Telegram sent")
-	}
-
-	if err := logOrderToDB(r, serviceName, lang, order); err != nil {
-		// fmt.Printf("❌ DB log error: %v\n", err)
-	} else {
-		// fmt.Println("✅ Order saved to DB")
-	}
+	_ = utils.SendTelegramNotification(service, lang, templateData)
+	_ = logOrderToDB(r, serviceName, lang, order)
 
 	respondWithJSON(w, http.StatusOK, map[string]string{
 		"status":  "success",
@@ -212,7 +179,7 @@ func logOrderToDB(r *http.Request, serviceName, lang string, order ProjectOrder)
 	_, err := db.Exec(
 		`INSERT INTO project_orders 
 		(service_name, full_name, company_name, contact_info, project_link, 
-		payment_method, start_date, languages, ip_address, user_agent, created_at)
+		payment_method, start_date, language, ip_address, user_agent, created_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		serviceName,
 		order.FullName,
@@ -221,13 +188,14 @@ func logOrderToDB(r *http.Request, serviceName, lang string, order ProjectOrder)
 		order.ProjectLink,
 		order.PaymentMethod,
 		order.StartDate,
-		order.Languages,
+		order.Language,
 		utils.GetRealIP(r),
 		r.UserAgent(),
 		time.Now().UTC(),
 	)
 	return err
 }
+
 
 func HealthCheck(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, map[string]string{

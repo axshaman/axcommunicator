@@ -35,5 +35,5 @@ USER 1000
 ENV GOCACHE=/app/tmp/.cache \
     GOMODCACHE=/go/pkg/mod
 
-RUN go build -o /axcommutator
-CMD ["/axcommutator"]
+RUN go build -o axcommutator
+CMD ["./axcommutator"]

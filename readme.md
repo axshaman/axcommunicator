@@ -233,7 +233,7 @@ curl -v -X POST http://localhost:8600/api/v1/order \
     "fullName": "John",
     "contactInfo": "john@example.com",
     "paymentMethod": "card",
-    "languages": 1,
+    "language": "en",
     "startDate": "2025-07-10",
     "specificationPdf": "<base64-pdf>",
     "invoicePdf": "<base64-pdf>",
