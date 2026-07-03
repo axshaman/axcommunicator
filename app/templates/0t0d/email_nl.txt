@@ -1,0 +1,13 @@
+Hallo {full_name},
+
+Welkom bij {service_name} – een cybersecurity boutique van Aleksandr Shaman.
+
+🕒 Startdatum: {start_date}
+💳 Betaalmethode: {payment}
+📩 Contactinformatie: {contact}
+📎 Projectlink: {project_link}
+
+Uw documenten (specificatie, factuur en contract) zijn bijgevoegd bij deze e-mail.
+
+Met vriendelijke groet,  
+Het {service_name}-team

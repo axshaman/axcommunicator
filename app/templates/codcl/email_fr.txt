@@ -1,6 +1,6 @@
 Bonjour {full_name},
 
-Bienvenue chez {service_name} – le premier studio Vibecoding créé par Aleksandr Shaman.
+Bienvenue chez le premier studio Vibecoding (AI) créé par Aleksandr Shaman.
 
 🕒 Date de début : {start_date}
 💳 Mode de paiement : {payment}
@@ -10,4 +10,4 @@ Bienvenue chez {service_name} – le premier studio Vibecoding créé par Aleksa
 Vos documents (cahier des charges, facture, contrat) sont joints à cet e-mail.
 
 Cordialement,
-L’équipe {service_name
+L’équipe {service_name}.com

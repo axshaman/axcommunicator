@@ -1,0 +1,12 @@
+📬 Nieuw bericht van {full_name}
+
+💡 Onderwerp: {subject}
+
+💬 Bericht:
+{feedback}
+
+🏢 Bedrijf: {company}
+📧 Contact: {contact}
+
+---
+Dit bericht is verzonden via het contactformulier op 0trust0day.com

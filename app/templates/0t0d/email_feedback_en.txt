@@ -1,0 +1,12 @@
+📬 New message from {full_name}
+
+💡 Service of interest: {subject}
+
+💬 Message:
+{feedback}
+
+🏢 Company: {company}
+📧 Contact: {contact}
+
+---
+This message was sent via the 0trust0day.com feedback form.

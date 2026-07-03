@@ -1,6 +1,6 @@
 Hola {full_name},
 
-Bienvenido a {service_name}, el primer estudio Vibecoding creado por Aleksandr Shaman.
+Bienvenido a codcl.com el primer estudio Vibecoding (AI) creado por Aleksandr Shaman.
 
 🕒 Fecha de inicio: {start_date}
 💳 Método de pago: {payment}
@@ -10,4 +10,4 @@ Bienvenido a {service_name}, el primer estudio Vibecoding creado por Aleksandr S
 Tus documentos (especificaciones, factura, contrato) están adjuntos a este correo electrónico.
 
 Saludos cordiales,
-El equipo de {service_name}
+El equipo de {service_name}.com

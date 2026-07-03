@@ -1,0 +1,5 @@
+💻 0t0d: New message from {full_name}
+🕒 Start date: {start_date}
+💳 Payment: {payment}
+📎 Project link: {project_link}
+📩 Contact: {contact}

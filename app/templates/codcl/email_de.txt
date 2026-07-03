@@ -1,6 +1,6 @@
 Hallo {full_name},
 
-Willkommen bei {service_name} – dem ersten Vibecoding Studio von Aleksandr Shaman.
+Willkommen bei codcl.com – dem ersten Vibecoding (AI) Studio von Aleksandr Shaman.
 
 🕒 Startdatum: {start_date}
 💳 Zahlungsmethode: {payment}
@@ -10,4 +10,4 @@ Willkommen bei {service_name} – dem ersten Vibecoding Studio von Aleksandr Sha
 Ihre Dokumente (Spezifikation, Rechnung, Vertrag) befinden sich im Anhang dieser E-Mail.
 
 Mit freundlichen Grüßen,
-Das {service_name} Team
+Das {service_name}.com Team

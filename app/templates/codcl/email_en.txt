@@ -1,6 +1,6 @@
 Hello {full_name},
 
-Welcome to {service_name} – First Vibecoding Studio by Aleksandr Shaman.
+Welcome to codcl.com – First Vibecoding (AI based) Studio by Aleksandr Shaman.
 
 🕒 Start Date: {start_date}
 💳 Payment Method: {payment}
@@ -10,4 +10,4 @@ Welcome to {service_name} – First Vibecoding Studio by Aleksandr Shaman.
 Your documents (spec, invoice, contract) are attached to this email.
 
 Best regards,  
-The {service_name} Team
+The {service_name}.com Team

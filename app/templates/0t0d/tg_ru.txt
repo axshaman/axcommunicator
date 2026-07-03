@@ -1,0 +1,5 @@
+💻 0t0d: Новое сообщение от {full_name}
+🕒 Дата начала: {start_date}
+💳 Оплата: {payment}
+📎 Ссылка на проект: {project_link}
+📩 Контакт: {contact}

@@ -1,0 +1,5 @@
+💻 0t0d: Nieuw bericht van {full_name}
+🕒 Startdatum: {start_date}
+💳 Betaling: {payment}
+📎 Projectlink: {project_link}
+📩 Contact: {contact}

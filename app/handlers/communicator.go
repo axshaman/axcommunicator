@@ -8,23 +8,31 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
+	"sync"
 	"time"
+
+	"golang.org/x/time/rate"
 )
 
+// === структуры ===
+
 type ProjectOrder struct {
-	FullName        string `json:"fullName"`
-	CompanyName     string `json:"companyName,omitempty"`
-	Country         string `json:"country,omitempty"`
-	Address         string `json:"address,omitempty"`
-	ContactInfo     string `json:"contactInfo"`
-	ProjectLink     string `json:"projectLink,omitempty"`
-	PaymentMethod   string `json:"paymentMethod"`
-	StartDate       string `json:"startDate"`
-	Language 		string `json:"language"`
+	FullName         string `json:"fullName"`
+	CompanyName      string `json:"companyName,omitempty"`
+	Country          string `json:"country,omitempty"`
+	Address          string `json:"address,omitempty"`
+	ContactInfo      string `json:"contactInfo"`
+	ProjectLink      string `json:"projectLink,omitempty"`
+	PaymentMethod    string `json:"paymentMethod,omitempty"`
+	StartDate        string `json:"startDate,omitempty"`
+	Language         string `json:"language,omitempty"`
+	Feedback         string `json:"feedback,omitempty"`
+	Subject          string `json:"subject,omitempty"`
 	BriefFile        []byte `json:"briefFile,omitempty"`
-	SpecificationPdf []byte `json:"specificationPdf"`
-	InvoicePdf       []byte `json:"invoicePdf"`
-	ContractPdf      []byte `json:"contractPdf"`
+	SpecificationPdf []byte `json:"specificationPdf,omitempty"`
+	InvoicePdf       []byte `json:"invoicePdf,omitempty"`
+	ContractPdf      []byte `json:"contractPdf,omitempty"`
 }
 
 type CookieConsent struct {
@@ -37,20 +45,29 @@ type CookieConsent struct {
 	Language    string `json:"language,omitempty"`
 }
 
+// === кэши для антиспама и идемпотентности ===
+var (
+	recentRequests sync.Map
+	requestCounter sync.Map
+	maxCacheSize   = 5000
+)
+
+// === лимитер по IP ===
+func allowRequest(ip string) bool {
+	limiterIface, _ := requestCounter.LoadOrStore(ip, rate.NewLimiter(rate.Every(time.Minute/20), 20)) // 20 req/min
+	limiter := limiterIface.(*rate.Limiter)
+	return limiter.Allow()
+}
+
+// === основной обработчик ===
 func HandleProjectOrder(w http.ResponseWriter, r *http.Request) {
 	var order ProjectOrder
 	if err := json.NewDecoder(r.Body).Decode(&order); err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
-
-	if order.FullName == "" || order.ContactInfo == "" || order.PaymentMethod == "" {
+	if order.FullName == "" || order.ContactInfo == "" {
 		respondWithError(w, http.StatusBadRequest, "Missing required fields")
-		return
-	}
-
-	if !utils.ValidatePDF(order.SpecificationPdf) || !utils.ValidatePDF(order.InvoicePdf) || !utils.ValidatePDF(order.ContractPdf) {
-		respondWithError(w, http.StatusBadRequest, "Invalid PDF files")
 		return
 	}
 
@@ -60,21 +77,60 @@ func HandleProjectOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// определение языка: заголовок > тело > fallback
+	clientIP := utils.GetRealIP(r)
+	if !allowRequest(clientIP) {
+		respondWithError(w, http.StatusTooManyRequests, "Too many requests from this IP")
+		return
+	}
+
+	key := fmt.Sprintf("%s|%s|%s", clientIP, serviceName, order.ContactInfo)
+	count := 0
+	recentRequests.Range(func(_, _ any) bool {
+		count++
+		return count < maxCacheSize
+	})
+	if count >= maxCacheSize {
+		respondWithError(w, http.StatusServiceUnavailable, "Server busy, try later")
+		return
+	}
+	if _, exists := recentRequests.Load(key); exists {
+		respondWithJSON(w, http.StatusOK, map[string]string{
+			"status":  "duplicate",
+			"message": "Request already processed recently",
+		})
+		return
+	}
+	recentRequests.Store(key, time.Now())
+	time.AfterFunc(5*time.Minute, func() { recentRequests.Delete(key) })
+
+	// === PDF валидация ===
+	if len(order.SpecificationPdf) > 0 && !utils.ValidatePDF(order.SpecificationPdf) {
+		respondWithError(w, http.StatusBadRequest, "Invalid specification PDF")
+		return
+	}
+	if len(order.InvoicePdf) > 0 && !utils.ValidatePDF(order.InvoicePdf) {
+		respondWithError(w, http.StatusBadRequest, "Invalid invoice PDF")
+		return
+	}
+	if len(order.ContractPdf) > 0 && !utils.ValidatePDF(order.ContractPdf) {
+		respondWithError(w, http.StatusBadRequest, "Invalid contract PDF")
+		return
+	}
+
+	// === язык ===
 	lang := order.Language
 	if lang == "" {
 		lang = r.Header.Get("Accept-Language")
 	}
 	if lang == "" {
 		lang = "en"
-	}	
+	}
 
 	service, ok := config.GetService(serviceName)
 	if !ok {
 		respondWithError(w, http.StatusBadRequest, "Service not configured")
 		return
 	}
-
 	if !utils.Contains(service.SupportedLangs, lang) {
 		if len(service.SupportedLangs) > 0 {
 			lang = service.SupportedLangs[0]
@@ -83,13 +139,24 @@ func HandleProjectOrder(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	filePaths, err := saveOrderFiles(order)
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to save files")
-		return
-	}
-	defer cleanupFiles(filePaths)
+	// === определение типа ===
+	isOrder := order.PaymentMethod != "" ||
+		len(order.SpecificationPdf) > 0 ||
+		len(order.InvoicePdf) > 0 ||
+		len(order.ContractPdf) > 0
 
+	var filePaths map[string]string
+	var err error
+	if isOrder {
+		filePaths, err = saveOrderFiles(order)
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, "Failed to save files")
+			return
+		}
+		defer cleanupFiles(filePaths)
+	}
+
+	// === данные для шаблонов ===
 	templateData := map[string]interface{}{
 		"full_name":    order.FullName,
 		"company":      order.CompanyName,
@@ -99,30 +166,30 @@ func HandleProjectOrder(w http.ResponseWriter, r *http.Request) {
 		"start_date":   order.StartDate,
 		"language":     lang,
 		"service_name": service.Name,
+		"feedback":     order.Feedback,
+		"subject":      order.Subject,
 	}
 
-	subject := "Order Confirmation"
-	body := "Order received VibeCoders Club by Aleksandr Shaman - www.codcl.com"
+	var subject, body string
+	basePath := fmt.Sprintf("app/templates/%s", serviceName)
 
-	// шаблон темы письма
-	if path := service.EmailTemplateSubjectPaths[lang]; path != "" {
-		if raw, err := os.ReadFile(path); err == nil {
-			subject = utils.FillTemplate(string(raw), templateData)
-		}
+	if isOrder {
+		subjectPath := filepath.Join(basePath, "subject_"+lang+".txt")
+		bodyPath := filepath.Join(basePath, "email_order_"+lang+".txt")
+		subject = utils.LoadTemplateOrDefault(subjectPath, "Order Confirmation", templateData)
+		body = utils.LoadTemplateOrDefault(bodyPath, "Order received successfully.", templateData)
+	} else {
+		subjectPath := filepath.Join(basePath, "subject_"+lang+".txt")
+		bodyPath := filepath.Join(basePath, "email_feedback_"+lang+".txt")
+		subject = utils.LoadTemplateOrDefault(subjectPath, "New feedback from {full_name}", templateData)
+		body = utils.LoadTemplateOrDefault(bodyPath,
+			"📬 Feedback from {full_name}\n💬 {feedback}\n🏢 {company}\n📧 {contact}\n📞 {project_link}",
+			templateData)
 	}
 
-	// шаблон тела письма
-	if path := service.EmailTemplateBodyPaths[lang]; path != "" {
-		if raw, err := os.ReadFile(path); err == nil {
-			body = utils.FillTemplate(string(raw), templateData)
-		}
-	}
-
-	attachments, err := utils.PrepareAttachments(filePaths)
-	if err == nil {
-		_ = utils.SendOrderEmail(service, subject, body, order.ContactInfo, attachments)
-	}
-
+	// === отправка ===
+	attachments, _ := utils.PrepareAttachments(filePaths)
+	_ = utils.SendOrderEmail(service, subject, body, order.ContactInfo, attachments)
 	_ = utils.SendTelegramNotification(service, lang, templateData)
 	_ = logOrderToDB(r, serviceName, lang, order)
 
@@ -130,21 +197,20 @@ func HandleProjectOrder(w http.ResponseWriter, r *http.Request) {
 		"status":  "success",
 		"service": serviceName,
 		"lang":    lang,
+		"type":    func() string { if isOrder { return "order" } else { return "feedback" } }(),
 	})
 }
 
-// ==== helper functions ====
+// ==== helpers ====
 
 func respondWithError(w http.ResponseWriter, code int, message string) {
 	respondWithJSON(w, code, map[string]string{"error": message})
 }
-
 func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	_ = json.NewEncoder(w).Encode(payload)
 }
-
 func saveOrderFiles(order ProjectOrder) (map[string]string, error) {
 	filePaths := make(map[string]string)
 	files := map[string][]byte{
@@ -156,6 +222,9 @@ func saveOrderFiles(order ProjectOrder) (map[string]string, error) {
 		files["brief"] = order.BriefFile
 	}
 	for name, content := range files {
+		if len(content) == 0 {
+			continue
+		}
 		fileInfo, err := utils.SaveTempFile(content, name)
 		if err != nil {
 			for _, path := range filePaths {
@@ -167,13 +236,11 @@ func saveOrderFiles(order ProjectOrder) (map[string]string, error) {
 	}
 	return filePaths, nil
 }
-
 func cleanupFiles(filePaths map[string]string) {
 	for _, path := range filePaths {
 		_ = os.Remove(path)
 	}
 }
-
 func logOrderToDB(r *http.Request, serviceName, lang string, order ProjectOrder) error {
 	db := db.GetDB()
 	_, err := db.Exec(
@@ -195,49 +262,25 @@ func logOrderToDB(r *http.Request, serviceName, lang string, order ProjectOrder)
 	)
 	return err
 }
-
-
-func HealthCheck(w http.ResponseWriter, r *http.Request) {
-	respondWithJSON(w, http.StatusOK, map[string]string{
-		"status": "healthy",
-		"time":   time.Now().UTC().Format(time.RFC3339),
-	})
-}
-
 func HandleCookieConsent(w http.ResponseWriter, r *http.Request) {
 	var consent CookieConsent
 	if err := json.NewDecoder(r.Body).Decode(&consent); err != nil {
-		// fmt.Printf("❌ Invalid consent payload: %v\n", err)
 		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
-
 	if consent.ServiceName == "" || consent.Fingerprint == "" || consent.Timestamp == "" {
-		// fmt.Println("❌ Missing required consent fields")
 		respondWithError(w, http.StatusBadRequest, "Missing required fields")
 		return
 	}
-
-	/*service, ok := config.GetService(consent.ServiceName)
-	if !ok {
-		// fmt.Printf("❌ Unknown service for consent: %s\n", consent.ServiceName)
-		respondWithError(w, http.StatusBadRequest, "Service not configured")
-		return
-	}*/
-
 	if err := logConsentToDB(consent); err != nil {
-		// fmt.Printf("❌ Failed to log consent: %v\n", err)
 		respondWithError(w, http.StatusInternalServerError, "Failed to log consent")
 		return
 	}
-
-	// fmt.Printf("✅ Consent logged for service: %s\n", service.Name)
 	respondWithJSON(w, http.StatusOK, map[string]string{
 		"status":  "logged",
 		"service": consent.ServiceName,
 	})
 }
-
 func logConsentToDB(consent CookieConsent) error {
 	db := db.GetDB()
 	_, err := db.Exec(
@@ -252,4 +295,11 @@ func logConsentToDB(consent CookieConsent) error {
 		consent.Timestamp,
 	)
 	return err
+}
+// HealthCheck — проверка состояния сервиса
+func HealthCheck(w http.ResponseWriter, r *http.Request) {
+	respondWithJSON(w, http.StatusOK, map[string]string{
+		"status": "healthy",
+		"time":   time.Now().UTC().Format(time.RFC3339),
+	})
 }

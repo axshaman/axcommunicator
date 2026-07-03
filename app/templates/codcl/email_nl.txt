@@ -1,6 +1,6 @@
 Hallo {full_name},
 
-Welkom bij {service_name} – de eerste Vibecoding Studio door Aleksandr Shaman.
+Welkom bij de eerste Vibe coding (AI) Studio door Aleksandr Shaman.
 
 🕒 Startdatum: {start_date}
 💳 Betaalmethode: {payment}
@@ -10,4 +10,4 @@ Welkom bij {service_name} – de eerste Vibecoding Studio door Aleksandr Shaman.
 Je documenten (specificatie, factuur, contract) zijn als bijlage bij deze e-mail gevoegd.
 
 Met vriendelijke groet,
-Het {service_name} Team
+Het {service_name}.com Team

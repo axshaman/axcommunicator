@@ -45,67 +45,59 @@ var services = map[string]ServiceConfig{}
 
 func LoadServices() {
 	for _, env := range os.Environ() {
-		if strings.Contains(env, "SERVICE_NAME") {
-			// fmt.Printf("🌍 RAW ENV: [%q]\n", env)
-		}
-	}
-	// fmt.Println("🔧 Loading service configurations...")
-	for _, env := range os.Environ() {
 		parts := strings.SplitN(env, "=", 2)
 		if len(parts) != 2 {
-			// fmt.Printf("⚠️ Malformed env: %s\n", env)
 			continue
 		}
 
 		key := parts[0]
 		val := parts[1]
 
+		// ✅ поддержка как ZD_SERVICE_NAME, так и ZD_SERVICE_NAME_SERVICE_NAME
 		if strings.HasSuffix(key, "_SERVICE_NAME") {
 			prefix := strings.TrimSuffix(key, "_SERVICE_NAME")
 			name := val
 
-			// fmt.Printf("🟢 Detected service: %s (prefix: %s)\n", name, prefix)
-
-			langs := strings.Split(os.Getenv(prefix+"_LANGS"), ",")
-			if len(langs) == 0 || (len(langs) == 1 && langs[0] == "") {
-				langs = []string{"en", "ru", "es"}
-				// fmt.Printf("🌐 No langs defined, using fallback: %v\n", langs)
-			} else {
-				// fmt.Printf("🌐 Supported langs for %s: %v\n", name, langs)
-			}
-
-			emailTemplates := loadEmailTemplates(prefix, name, langs)
-			emailSubjectPaths := loadEmailSubjectPaths(prefix, name, langs)
-			emailBodyPaths := loadEmailBodyPaths(prefix, name, langs)
-			tgTemplates := loadTelegramTemplates(prefix, name, langs)
-			tgPaths := loadTelegramPaths(prefix, name, langs)
-
-			services[strings.ToLower(name)] = ServiceConfig{
-				Name: name,
-				SMTP: SMTPConfig{
-					User:     os.Getenv(prefix + "_SMTP_USER"),
-					Password: os.Getenv(prefix + "_SMTP_PASS"),
-					Host:     os.Getenv(prefix + "_SMTP_HOST"),
-					Port:     os.Getenv(prefix + "_SMTP_PORT"),
-					From:     os.Getenv(prefix + "_FROM_EMAIL"),
-					Admin:    os.Getenv(prefix + "_ADMIN_EMAIL"),
-				},
-				Telegram: TelegramConfig{
-					BotToken: os.Getenv(prefix + "_TG_BOT_TOKEN"),
-					ChatID:   os.Getenv(prefix + "_TG_CHAT_ID"),
-				},
-				EmailTemplates:             emailTemplates,
-				EmailTemplateSubjectPaths:  emailSubjectPaths,
-				EmailTemplateBodyPaths:     emailBodyPaths,
-				TelegramTemplates:          tgTemplates,
-				TelegramTemplatePaths:      tgPaths,
-				SupportedLangs:             langs,
-			}
-
-			// fmt.Printf("✅ Loaded service: %s with %d email template(s), %d tg template(s)\n\n",
-			// 	name, len(emailTemplates), len(tgTemplates))
+			loadSingleService(prefix, name)
 		}
 	}
+}
+
+func loadSingleService(prefix, name string) {
+	langs := strings.Split(os.Getenv(prefix+"_LANGS"), ",")
+	if len(langs) == 0 || (len(langs) == 1 && langs[0] == "") {
+		langs = []string{"en"}
+	}
+
+	emailTemplates := loadEmailTemplates(prefix, name, langs)
+	emailSubjectPaths := loadEmailSubjectPaths(prefix, name, langs)
+	emailBodyPaths := loadEmailBodyPaths(prefix, name, langs)
+	tgTemplates := loadTelegramTemplates(prefix, name, langs)
+	tgPaths := loadTelegramPaths(prefix, name, langs)
+
+	services[strings.ToLower(name)] = ServiceConfig{
+		Name: name,
+		SMTP: SMTPConfig{
+			User:     os.Getenv(prefix + "_SMTP_USER"),
+			Password: os.Getenv(prefix + "_SMTP_PASS"),
+			Host:     os.Getenv(prefix + "_SMTP_HOST"),
+			Port:     os.Getenv(prefix + "_SMTP_PORT"),
+			From:     os.Getenv(prefix + "_FROM_EMAIL"),
+			Admin:    os.Getenv(prefix + "_ADMIN_EMAIL"),
+		},
+		Telegram: TelegramConfig{
+			BotToken: os.Getenv(prefix + "_TG_BOT_TOKEN"),
+			ChatID:   os.Getenv(prefix + "_TG_CHAT_ID"),
+		},
+		EmailTemplates:             emailTemplates,
+		EmailTemplateSubjectPaths:  emailSubjectPaths,
+		EmailTemplateBodyPaths:     emailBodyPaths,
+		TelegramTemplates:          tgTemplates,
+		TelegramTemplatePaths:      tgPaths,
+		SupportedLangs:             langs,
+	}
+
+	// fmt.Printf("✅ Loaded service: %s (prefix: %s)\n", name, prefix)
 }
 
 func GetService(name string) (ServiceConfig, bool) {
