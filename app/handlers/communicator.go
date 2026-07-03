@@ -273,6 +273,7 @@ func HandleCookieConsent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := logConsentToDB(consent); err != nil {
+		fmt.Printf("logConsentToDB failed: %v\n", err)
 		respondWithError(w, http.StatusInternalServerError, "Failed to log consent")
 		return
 	}
@@ -281,9 +282,10 @@ func HandleCookieConsent(w http.ResponseWriter, r *http.Request) {
 		"service": consent.ServiceName,
 	})
 }
+
 func logConsentToDB(consent CookieConsent) error {
-	db := db.GetDB()
-	_, err := db.Exec(
+	dbConn := db.GetDB()
+	_, err := dbConn.Exec(
 		`INSERT INTO cookie_consents 
 		(service_name, fingerprint, user_agent, ip_address, accepted, timestamp)
 		VALUES (?, ?, ?, ?, ?, ?)`,
@@ -294,7 +296,10 @@ func logConsentToDB(consent CookieConsent) error {
 		consent.Accepted,
 		consent.Timestamp,
 	)
-	return err
+	if err != nil {
+		return fmt.Errorf("insert into cookie_consents failed: %w", err)
+	}
+	return nil
 }
 // HealthCheck — проверка состояния сервиса
 func HealthCheck(w http.ResponseWriter, r *http.Request) {
