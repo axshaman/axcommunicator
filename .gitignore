@@ -49,8 +49,6 @@ Thumbs.db
 bin/
 *.exe
 *.test
-*.mod
-*.sum
 *.prof
 *.coverprofile
 
